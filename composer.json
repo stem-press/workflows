@@ -1,0 +1,22 @@
+{
+    "name": "stem-press/workflows",
+    "description": "Workflows for Stem",
+    "type": "wordpress-plugin",
+    "license": "LGPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Jon Gilkison",
+            "email": "jon.gilkison@gmail.com"
+        }
+    ],
+    "require": {
+        "stem-press/stem": ">=0.5.5",
+        "illuminate/database": "^5.8",
+        "illuminate/events": "^5.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "Stem\\Workflows\\": "classes"
+        }
+    }
+}
