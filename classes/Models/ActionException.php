@@ -2,7 +2,12 @@
 
 namespace Stem\Workflows\Models;
 
-class StepActionException extends \Exception {
+/**
+ * Exception thrown by actions
+ *
+ * @package Stem\Workflows\Models
+ */
+class ActionException extends \Exception {
 	protected $stopsWorkflow;
 
 	public function __construct($message = "", $stopsWorkflow = false) {

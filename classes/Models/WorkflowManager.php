@@ -12,7 +12,7 @@ final class WorkflowManager {
 	private static $workflowsForPostTypes = [];
 
 	/**
-	 * Returns workflows for a given post type
+	 * Returns workflow classes for a given post type
 	 * @param $postType
 	 *
 	 * @return Workflow[]
@@ -26,7 +26,7 @@ final class WorkflowManager {
 	}
 
 	/**
-	 * Returns workflows and workflow states for a given post
+	 * Returns workflow classes and workflow states for a given post
 	 *
 	 * @param Post $post
 	 * @return array
@@ -37,6 +37,7 @@ final class WorkflowManager {
 		$runningStates = [];
 		$availableFlows = [];
 		$unavailableFlows = [];
+		$potentialFlows = [];
 
 		$postTypeFlows = static::workflowsForPostType($post::postType());
 		/** @var WorkflowState $state */
@@ -44,48 +45,58 @@ final class WorkflowManager {
 			if ($state->status < WorkflowState::STATUS_COMPLETE) {
 				$runningStates[] = $state;
 
-				if ($state->workflow->type() == Workflow::WORKFLOW_TYPE_CONCURRENT) {
-					$availableFlows[] = $state->workflow;
+				if ($state->workflowClass::type() == Workflow::WORKFLOW_TYPE_CONCURRENT) {
+					if ($state->workflowClass::validForPost($post)) {
+						$availableFlows[] = $state->workflowClass;
+					}
 				} else {
-					$unavailableFlows[] = $state->workflow;
+					$unavailableFlows[] = $state->workflowClass;
 				}
 			} else if ($state->status == WorkflowState::STATUS_COMPLETE) {
-				if ($state->workflow->type() == Workflow::WORKFLOW_TYPE_ONCE) {
-					$unavailableFlows[] = $state->workflow;
+				if ($state->workflowClass::type() == Workflow::WORKFLOW_TYPE_ONCE) {
+					$unavailableFlows[] = $state->workflowClass;
 				} else {
-					$availableFlows[] = $state->workflow;
+					if ($state->workflowClass::validForPost($post)) {
+						$availableFlows[] = $state->workflowClass;
+					}
 				}
 			} else {
-				if ($state->status != WorkflowState::STATUS_CANCELLED) {
-					$runningStates[] = $state;
+				if ((($state->status < WorkflowState::STATUS_CANCELLED) || ($state->status < WorkflowState::STATUS_ERROR)) && ($state->workflowClass::validForPost($post))) {
+					$potentialFlows[] = $state->workflowClass;
 				}
+			}
+		}
 
-				$availableFlows[] = $state->workflow;
+		foreach($potentialFlows as $flow) {
+			if (!in_array($flow, $unavailableFlows) && !in_array($flow, $potentialFlows)) {
+				if ($flow::validForPost($post)) {
+					$availableFlows[] = $flow;
+				}
 			}
 		}
 
 		/** @var Workflow $flow */
 		foreach($postTypeFlows as $flow) {
-			if (!in_array($flow, $availableFlows)) {
-				if (!in_array($flow, $unavailableFlows)) {
+			if (!in_array($flow, $availableFlows) && !in_array($flow, $unavailableFlows)) {
+				if ($flow::validForPost($post)) {
 					$availableFlows[] = $flow;
 				}
 			}
 		}
 
 		return [
-			'running' => $states,
+			'running' => $runningStates,
 			'available' => $availableFlows
 		];
 
 	}
 
 	/**
-	 * Returns a workflow with a given id
+	 * Returns a workflow class with a given id
 	 *
 	 * @param $id
 	 *
-	 * @return Workflow|null
+	 * @return string|null
 	 */
 	public static function workflow($id) {
 		if (!isset(static::$workflows[$id])) {
@@ -101,18 +112,15 @@ final class WorkflowManager {
 	 * @param string $workflowClass
 	 */
 	public static function registerWorkflow($workflowClass) {
-		/** @var Workflow $workflow */
-		$workflow = new $workflowClass();
+		static::$workflows[$workflowClass::id()] = $workflowClass;
 
-		static::$workflows[$workflow->id()] = $workflow;
-
-		$postTypes = $workflow->postTypes();
+		$postTypes = $workflowClass::postTypes();
 		foreach($postTypes as $postType) {
 			if (empty(static::$workflowsForPostTypes[$postType])) {
 				static::$workflowsForPostTypes[$postType] = [];
 			}
 
-			static::$workflowsForPostTypes[$postType][] = $workflow;
+			static::$workflowsForPostTypes[$postType][] = $workflowClass;
 		}
 	}
 }

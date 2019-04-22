@@ -4,17 +4,18 @@ namespace Stem\Workflows\Models;
 
 use Stem\Core\Context;
 use Stem\Queue\Job;
-use Stem\Queue\Queue;
 
 class WorkflowJob extends Job {
 	private $postId;
 	private $workflowStateId;
-	private $currentStep;
 
-	public function __construct($postId, $currentStep, $workflowStateId) {
+	public function __construct($postId, $workflowStateId) {
 		$this->postId = $postId;
-		$this->currentStep = $currentStep;
 		$this->workflowStateId = $workflowStateId;
+	}
+
+	public function maxIterations() {
+		return 5;
 	}
 
 	/**
@@ -27,14 +28,16 @@ class WorkflowJob extends Job {
 		/** @var WorkflowState $workflowState */
 		$workflowState = WorkflowState::find($this->workflowStateId);
 
-		if ($workflowState->workflow->execute($post, $this->currentStep, $workflowState)) {
-			Queue::instance()->add('workflows', new WorkflowJob($this->postId, $this->currentStep+1, $workflowState->id));
+		/** @var Workflow $workflow */
+		$workflow = new $workflowState->workflowClass($post, $workflowState);
+		$result = $workflow->execute();
+
+		if ($result == Workflow::EXECUTE_RESULT_ERROR) {
+			return Job::STATUS_ERROR;
+		} else if ($result == Workflow::EXECUTE_RESULT_FATAL_ERROR) {
+			return Job::STATUS_FATAL_ERROR;
 		}
 
-		if ($workflowState->status == WorkflowState::STATUS_ERROR) {
-			return self::STATUS_ERROR;
-		}
-
-		return self::STATUS_OK;
+		return Job::STATUS_OK;
 	}
 }

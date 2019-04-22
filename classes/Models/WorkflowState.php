@@ -13,8 +13,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $status
  * @property array $state
  * @property int $current_step
- * @property float $progress
- * @property Workflow $workflow
+ * @property int $total_steps
+ * @property string $current_step_title
+ * @property-read  float $progress
+ * @property Action[] $steps
+ * @property-read string $workflowClass
  */
 class WorkflowState extends Model {
 	const STATUS_NEW = 0;
@@ -23,13 +26,13 @@ class WorkflowState extends Model {
 	const STATUS_CANCELLED = 300;
 	const STATUS_ERROR = 600;
 
-	/** @var null|Workflow  */
-	private $workflow = null;
+	/** @var null|string */
+	private $_workflowClass = null;
 
 	/**
 	 * {@inheritDoc}
 	 */
-	protected $table = 'ilab_workflows';
+	protected $table = 'stem_workflow_states';
 
 	/**
 	 * {@inheritDoc}
@@ -38,7 +41,20 @@ class WorkflowState extends Model {
 		'state' => 'array',
 	];
 
+	private function insureState() {
+		if (empty($this->state)) {
+			$this->state = [
+				'step' => 0,
+				'totalSteps' => 0,
+				'steps' => null,
+				'currentStep' => null
+			];
+		}
+	}
+
 	public function getCurrentStepAttribute() {
+		$this->insureState();
+
 		if (isset($this->state['step'])) {
 			return $this->state['step'];
 		}
@@ -46,15 +62,83 @@ class WorkflowState extends Model {
 		return 0;
 	}
 
-	public function getProgressAttribute() {
+	public function setCurrentStepAttribute($val) {
+		$this->insureState();
+
+		$state = $this->state;
+		$state['step'] = $val;
+		$this->state = $state;
+	}
+
+	public function getTotalStepsAttribute() {
+		$this->insureState();
+
+		if (isset($this->state['totalSteps'])) {
+			return $this->state['totalSteps'];
+		}
+
 		return 0;
 	}
 
-	public function getWorkflowAttribute() {
-		if (empty($this->workflow)) {
-			$this->workflow = WorkflowManager::workflow($this->workflow_id);
+	public function setTotalStepsAttribute($val) {
+		$this->insureState();
+
+		$state = $this->state;
+		$state['totalSteps'] = $val;
+		$this->state = $state;
+	}
+
+	public function getCurrentStepTitleAttribute() {
+		$this->insureState();
+
+		if (isset($this->state['currentStep'])) {
+			return $this->state['currentStep'];
 		}
 
-		return $this->workflow;
+		return null;
+	}
+
+	public function setCurrentStepTitleAttribute($val) {
+		$this->insureState();
+
+		$state = $this->state;
+		$state['currentStep'] = $val;
+		$this->state = $state;
+	}
+
+	public function getStepsAttribute() {
+		$this->insureState();
+
+		if (isset($this->state['steps'])) {
+			return unserialize($this->state['steps']);
+		}
+
+		return [];
+	}
+
+	public function setStepsAttribute($val) {
+		$this->insureState();
+
+		$state = $this->state;
+		$state['steps'] = serialize($val);
+		$this->state = $state;
+	}
+
+	public function getProgressAttribute() {
+		$this->insureState();
+
+		if ($this->total_steps == 0) {
+			return 0;
+		}
+
+		return $this->current_step / $this->total_steps;
+	}
+
+	public function getWorkflowClassAttribute() {
+		if (empty($this->_workflowClass)) {
+			$this->_workflowClass = WorkflowManager::workflow($this->workflow_id);
+		}
+
+		return $this->_workflowClass;
 	}
 }
