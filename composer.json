@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "stem-press/stem": ">=0.5.8",
+        "stem-press/stem": ">=0.5.9",
         "stem-press/mail-template": ">=0.1.7",
         "illuminate/database": "^5.8",
         "illuminate/events": "^5.8"
