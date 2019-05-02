@@ -42,6 +42,10 @@ final class WorkflowManager {
 		$postTypeFlows = static::workflowsForPostType($post::postType());
 		/** @var WorkflowState $state */
 		foreach($states as $state) {
+			if (empty($state->workflowClass)) {
+				continue;
+			}
+
 			if ($state->status < WorkflowState::STATUS_COMPLETE) {
 				$runningStates[] = $state;
 
