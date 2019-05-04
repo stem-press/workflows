@@ -51,7 +51,9 @@ final class WorkflowManager {
 
 				if ($state->workflowClass::type() == Workflow::WORKFLOW_TYPE_CONCURRENT) {
 					if ($state->workflowClass::validForPost($post)) {
-						$availableFlows[] = $state->workflowClass;
+						if (!in_array($state->workflowClass, $availableFlows)) {
+							$availableFlows[] = $state->workflowClass;
+						}
 					}
 				} else {
 					$unavailableFlows[] = $state->workflowClass;
@@ -61,12 +63,16 @@ final class WorkflowManager {
 					$unavailableFlows[] = $state->workflowClass;
 				} else {
 					if ($state->workflowClass::validForPost($post)) {
-						$availableFlows[] = $state->workflowClass;
+						if (!in_array($state->workflowClass, $availableFlows) && !in_array($state->workflowClass, $unavailableFlows)) {
+							$availableFlows[] = $state->workflowClass;
+						}
 					}
 				}
 			} else {
 				if ((($state->status < WorkflowState::STATUS_CANCELLED) || ($state->status < WorkflowState::STATUS_ERROR)) && ($state->workflowClass::validForPost($post))) {
-					$potentialFlows[] = $state->workflowClass;
+					if (!in_array($state->workflowClass, $availableFlows) && !in_array($state->workflowClass, $unavailableFlows)) {
+						$potentialFlows[] = $state->workflowClass;
+					}
 				}
 			}
 		}
@@ -74,7 +80,9 @@ final class WorkflowManager {
 		foreach($potentialFlows as $flow) {
 			if (!in_array($flow, $unavailableFlows) && !in_array($flow, $potentialFlows)) {
 				if ($flow::validForPost($post)) {
-					$availableFlows[] = $flow;
+					if (!in_array($flow, $availableFlows) && !in_array($flow, $unavailableFlows)) {
+						$availableFlows[] = $flow;
+					}
 				}
 			}
 		}
@@ -83,7 +91,9 @@ final class WorkflowManager {
 		foreach($postTypeFlows as $flow) {
 			if (!in_array($flow, $availableFlows) && !in_array($flow, $unavailableFlows)) {
 				if ($flow::validForPost($post)) {
-					$availableFlows[] = $flow;
+					if (!in_array($flow, $availableFlows) && !in_array($flow, $unavailableFlows)) {
+						$availableFlows[] = $flow;
+					}
 				}
 			}
 		}
