@@ -4,7 +4,7 @@ Plugin Name: Stem Workflows
 Plugin URI: https://github.com/stem-press/workflows
 Description: Workflows for Stem
 Author: interfacelab
-Version: 0.1.4
+Version: 0.1.5
 Author URI: http://interfacelab.io
 */
 
