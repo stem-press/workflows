@@ -5,6 +5,7 @@ namespace Stem\Workflows\Actions;
 use Stem\MailTemplates\Jobs\SendMailTemplateJob;
 use Stem\Queue\Queue;
 use Stem\Workflows\Models\Action;
+use Stem\Workflows\Models\Workflow;
 
 class SendMailAction extends Action {
 	private $title = null;
@@ -27,6 +28,6 @@ class SendMailAction extends Action {
 
 	public function execute($post) {
 		$job = new SendMailTemplateJob($this->mailTemplate, $this->email, $this->data, $this->inlineImages);
-		Queue::instance()->add('email', $job);
+		Queue::instance()->add(Workflow::QUEUE_EMAIL, $job);
 	}
 }

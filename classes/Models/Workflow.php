@@ -34,6 +34,9 @@ abstract class Workflow {
 	const EXECUTE_RESULT_SUCCESS = 0;
 	const EXECUTE_RESULT_COMPLETE = 1;
 
+	const QUEUE_WORKFLOW = 'workflows';
+	const QUEUE_EMAIL = 'email';
+
 	/** @var string Flag that indicates the workflow can only be run once for a given post  */
 	const WORKFLOW_TYPE_ONCE = 'once';
 
@@ -209,6 +212,6 @@ abstract class Workflow {
 	 */
 	public function queue() {
 		$this->state->save();
-		Queue::instance()->add('workflows', new WorkflowJob($this->post->id, $this->state->id));
+		Queue::instance()->add(self::QUEUE_WORKFLOW, new WorkflowJob($this->post->id, $this->state->id));
 	}
 }
