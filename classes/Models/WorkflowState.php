@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $current_step
  * @property int $total_steps
  * @property string $current_step_title
+ * @property string $last_error
  * @property-read  float $progress
  * @property Action[] $steps
  * @property-read string $workflowClass

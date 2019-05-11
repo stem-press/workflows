@@ -168,6 +168,8 @@ abstract class Workflow {
 
 			return self::EXECUTE_RESULT_SUCCESS;
 		} catch (ActionException $ex) {
+			$this->state->last_error = $ex->getMessage();
+
 			if ($ex->getStopsWorkflow()) {
 				$this->state->status = WorkflowState::STATUS_CANCELLED;
 				$this->state->save();
