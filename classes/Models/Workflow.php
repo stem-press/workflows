@@ -20,6 +20,9 @@ use Stem\Queue\Queue;
  * @package Stem\Workflows\Models
  */
 abstract class Workflow {
+	/** @var \Throwable[] $exceptions  */
+	protected $exceptions = [];
+
 	/** @var Action[]  */
 	protected $steps = [];
 
@@ -141,7 +144,7 @@ abstract class Workflow {
 			$step = $this->steps[$this->state->current_step];
 			$this->state->current_step_title = $step->title();
 
-			$result = $step->execute($this->post);
+			$result = $step->execute($this->post, $this);
 			if ($result == Action::RESULT_FATAL_ERROR) {
 				$this->state->status = WorkflowState::STATUS_CANCELLED;
 				$this->state->save();
@@ -179,6 +182,11 @@ abstract class Workflow {
 				$this->state->save();
 				return self::EXECUTE_RESULT_ERROR;
 			}
+		} catch (\Exception $ex) {
+			$this->state->last_error = $ex->getMessage();
+			$this->state->status = WorkflowState::STATUS_ERROR;
+			$this->state->save();
+			return self::EXECUTE_RESULT_FATAL_ERROR;
 		}
 	}
 
@@ -189,14 +197,9 @@ abstract class Workflow {
 	 */
 	public function execute() {
 		while(true) {
-			try {
-				$result = $this->nextStep();
-				if ($result != self::EXECUTE_RESULT_SUCCESS) {
-					return $result;
-				}
-			} catch (\Exception $ex) {
-				$this->cancel();
-				return self::EXECUTE_RESULT_FATAL_ERROR;
+			$result = $this->nextStep();
+			if ($result != self::EXECUTE_RESULT_SUCCESS) {
+				return $result;
 			}
 		}
 	}
@@ -215,5 +218,21 @@ abstract class Workflow {
 	public function queue() {
 		$this->state->save();
 		Queue::instance()->add(self::QUEUE_WORKFLOW, new WorkflowJob($this->post->id, $this->state->id));
+	}
+
+	/**
+	 * Captures an exception for later processing
+	 * @param $ex
+	 */
+	public function captureException($ex) {
+		$this->exceptions[] = $ex;
+	}
+
+	/**
+	 * Returns the captured exceptions
+	 * @return \Throwable[]
+	 */
+	public function capturedExceptions() {
+		return $this->exceptions;
 	}
 }

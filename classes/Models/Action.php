@@ -24,8 +24,9 @@ abstract class Action {
 	 * Executes an action for a given post
 	 *
 	 * @param Post $post
+	 * @param Workflow $workflow
 	 *
 	 * @return int
 	 */
-	abstract public function execute($post);
+	abstract public function execute($post, $workflow = null);
 }
